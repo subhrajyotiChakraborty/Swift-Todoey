@@ -1,19 +1,22 @@
 
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController{
     
-    var itemArray: [TodoItem] = []
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("TodoItems.plist")
+    var itemArray = [TodoItem]()
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
         navigationItem.rightBarButtonItem?.tintColor = .white
         
-        loadTodoItems()
+//        loadTodoItems()
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -49,41 +52,45 @@ class TodoListViewController: UITableViewController{
         
         let submitAction = UIAlertAction(title: "Add Item", style: .default) { [weak self, weak ac] _ in
             guard let textInputItem = ac?.textFields?[0].text else { return }
-            self?.submit(item: textInputItem)
+            self?.submit(itemName: textInputItem)
         }
         
         ac.addAction(submitAction)
         present(ac, animated: true)
     }
     
-    func submit(item: String) {
-        itemArray.insert(TodoItem(name: item, isChecked: false), at: 0)
+    func submit(itemName: String) {
+        
+        let newTodoItem = TodoItem(context: context)
+        newTodoItem.name = itemName
+        newTodoItem.isChecked = false
+        itemArray.append(newTodoItem)
+        
         saveChanges()
+        
         let indexPath = IndexPath(row: 0, section: 0)
         tableView.insertRows(at: [indexPath], with: .automatic)
     }
     
     func saveChanges() {
-        let encoder = PropertyListEncoder()
         do {
-           let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         } catch {
-            print("Unable to update data \(error)")
+            print("error saving context \(error.localizedDescription)")
         }
     }
     
-    func loadTodoItems() {
-        guard let data = try? Data(contentsOf: dataFilePath!) else {
-            return
-        }
-        let decoder = PropertyListDecoder()
-        do {
-            itemArray = try decoder.decode([TodoItem].self, from: data)
-        } catch {
-            print("Unable to decode \(error)")
-        }
-    }
+//    func loadTodoItems() {
+//        guard let data = try? Data(contentsOf: dataFilePath!) else {
+//            return
+//        }
+//        let decoder = PropertyListDecoder()
+//        do {
+//            itemArray = try decoder.decode([TodoItem].self, from: data)
+//        } catch {
+//            print("Unable to decode \(error)")
+//        }
+//    }
 
 }
 
