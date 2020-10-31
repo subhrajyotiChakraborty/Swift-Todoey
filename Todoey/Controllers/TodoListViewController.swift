@@ -16,7 +16,10 @@ class TodoListViewController: UITableViewController{
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
         navigationItem.rightBarButtonItem?.tintColor = .white
         
-//        loadTodoItems()
+        navigationItem.leftBarButtonItem = editButtonItem
+        navigationItem.leftBarButtonItem?.tintColor = .white
+        
+        loadTodoItems()
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -41,6 +44,19 @@ class TodoListViewController: UITableViewController{
         itemArray[indexPath.row].isChecked.toggle()
         saveChanges()
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            context.delete(itemArray[indexPath.row])
+            itemArray.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .fade)
+            saveChanges()
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
     }
     
     @objc func addTapped() {
@@ -80,17 +96,14 @@ class TodoListViewController: UITableViewController{
         }
     }
     
-//    func loadTodoItems() {
-//        guard let data = try? Data(contentsOf: dataFilePath!) else {
-//            return
-//        }
-//        let decoder = PropertyListDecoder()
-//        do {
-//            itemArray = try decoder.decode([TodoItem].self, from: data)
-//        } catch {
-//            print("Unable to decode \(error)")
-//        }
-//    }
+    func loadTodoItems() {
+        let request: NSFetchRequest<TodoItem> = TodoItem.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Unable to decode \(error)")
+        }
+    }
 
 }
 
