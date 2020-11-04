@@ -83,9 +83,6 @@ class TodoListViewController: UITableViewController{
         itemArray.append(newTodoItem)
         
         saveChanges()
-        
-        let indexPath = IndexPath(row: 0, section: 0)
-        tableView.insertRows(at: [indexPath], with: .automatic)
     }
     
     func saveChanges() {
@@ -94,17 +91,44 @@ class TodoListViewController: UITableViewController{
         } catch {
             print("error saving context \(error.localizedDescription)")
         }
+        
+        tableView.reloadData()
     }
     
-    func loadTodoItems() {
-        let request: NSFetchRequest<TodoItem> = TodoItem.fetchRequest()
+    func loadTodoItems(with request: NSFetchRequest<TodoItem> = TodoItem.fetchRequest()) {
         do {
             itemArray = try context.fetch(request)
         } catch {
-            print("Unable to decode \(error)")
+            print("Unable to fetch data \(error.localizedDescription)")
+        }
+        
+        tableView.reloadData()
+    }
+}
+
+//MARK: - Search bar methods
+
+extension TodoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<TodoItem> = TodoItem.fetchRequest()
+        
+        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", searchBar.text!)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        
+        loadTodoItems(with: request)
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadTodoItems()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
         }
     }
-
 }
 
 
