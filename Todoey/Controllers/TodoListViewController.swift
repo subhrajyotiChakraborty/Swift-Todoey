@@ -13,7 +13,7 @@ class TodoListViewController: UITableViewController{
             loadTodoItems()
         }
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -22,10 +22,10 @@ class TodoListViewController: UITableViewController{
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
         navigationItem.rightBarButtonItem?.tintColor = .white
         
-//        navigationItem.leftBarButtonItem = editButtonItem
+        //        navigationItem.leftBarButtonItem = editButtonItem
         navigationItem.leftBarButtonItem?.tintColor = .white
     }
-
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemArray?.count ?? 1
     }
@@ -44,25 +44,29 @@ class TodoListViewController: UITableViewController{
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-//        if itemArray[indexPath.row].isChecked {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-//        } else {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-//        }
-//
-//        itemArray[indexPath.row].isChecked.toggle()
-//        saveChanges()
+        if let item = itemArray?[indexPath.row] {
+            do {
+                try realm.write {
+                    item.isChecked = !item.isChecked
+                }
+            } catch {
+                print("Error saving isChecked, \(error.localizedDescription)")
+            }
+            
+        }
+        
+        tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-//    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-//        if editingStyle == .delete {
-//            context.delete(itemArray[indexPath.row])
-//            itemArray.remove(at: indexPath.row)
-//            tableView.deleteRows(at: [indexPath], with: .fade)
-//            saveChanges()
-//        }
-//    }
+    //    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+    //        if editingStyle == .delete {
+    //            context.delete(itemArray[indexPath.row])
+    //            itemArray.remove(at: indexPath.row)
+    //            tableView.deleteRows(at: [indexPath], with: .fade)
+    //            saveChanges()
+    //        }
+    //    }
     
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         return true
@@ -90,6 +94,7 @@ class TodoListViewController: UITableViewController{
                 try realm.write {
                     let newTodoItem = TodoItem()
                     newTodoItem.name = itemName
+                    newTodoItem.dateCreated = Date()
                     currentCategory.todoItems.append(newTodoItem)
                 }
             } catch {
@@ -103,34 +108,30 @@ class TodoListViewController: UITableViewController{
     func loadTodoItems() {
         
         itemArray = selectedCategory?.todoItems.sorted(byKeyPath: "name", ascending: true)
-
+        
         tableView.reloadData()
     }
 }
 
 //MARK: - Search bar methods
 
-//extension TodoListViewController: UISearchBarDelegate {
-//
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        let request: NSFetchRequest<TodoItem> = TodoItem.fetchRequest()
-//
-//        let predicate = NSPredicate(format: "name CONTAINS[cd] %@", searchBar.text!)
-//
-//        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
-//
-//        loadTodoItems(with: request, predicate: predicate)
-//    }
-//
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0 {
-//            loadTodoItems()
-//
-//            DispatchQueue.main.async {
-//                searchBar.resignFirstResponder()
-//            }
-//        }
-//    }
-//}
+extension TodoListViewController: UISearchBarDelegate {
+
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        itemArray = itemArray?.filter("name CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: true)
+        
+        tableView.reloadData()
+    }
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadTodoItems()
+
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
+}
 
 
