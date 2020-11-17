@@ -3,7 +3,7 @@
 import UIKit
 import RealmSwift
 
-class TodoListViewController: UITableViewController{
+class TodoListViewController: SwipeTableViewController{
     
     var itemArray: Results<TodoItem>?
     let realm = try! Realm()
@@ -21,9 +21,6 @@ class TodoListViewController: UITableViewController{
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
         navigationItem.rightBarButtonItem?.tintColor = .white
-        
-        //        navigationItem.leftBarButtonItem = editButtonItem
-        navigationItem.leftBarButtonItem?.tintColor = .white
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -31,7 +28,7 @@ class TodoListViewController: UITableViewController{
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "TodoItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         if let item = itemArray?[indexPath.row] {
             cell.textLabel?.text = item.name
             cell.accessoryType = item.isChecked ? .checkmark : .none
@@ -58,15 +55,6 @@ class TodoListViewController: UITableViewController{
         tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
-    
-    //    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-    //        if editingStyle == .delete {
-    //            context.delete(itemArray[indexPath.row])
-    //            itemArray.remove(at: indexPath.row)
-    //            tableView.deleteRows(at: [indexPath], with: .fade)
-    //            saveChanges()
-    //        }
-    //    }
     
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         return true
@@ -110,6 +98,20 @@ class TodoListViewController: UITableViewController{
         itemArray = selectedCategory?.todoItems.sorted(byKeyPath: "name", ascending: true)
         
         tableView.reloadData()
+    }
+    
+    // Delete data by Swipe
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let todoItem = itemArray?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(todoItem)
+                }
+            } catch {
+                print("Unable to delete todo item, \(error.localizedDescription)")
+            }
+        }
     }
 }
 
