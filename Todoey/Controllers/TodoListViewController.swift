@@ -2,11 +2,14 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class TodoListViewController: SwipeTableViewController{
     
     var itemArray: Results<TodoItem>?
     let realm = try! Realm()
+    
+    @IBOutlet var searchBar: UISearchBar!
     
     var selectedCategory: Category? {
         didSet {
@@ -20,7 +23,23 @@ class TodoListViewController: SwipeTableViewController{
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
-        navigationItem.rightBarButtonItem?.tintColor = .white
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let hexColor = selectedCategory?.cellBackgroundColor {
+            title = selectedCategory?.categoryName
+            
+            guard let navBar = navigationController?.navigationBar else { return }
+            if let navBarColor = UIColor(hexString: hexColor) {
+                navBar.barTintColor = navBarColor
+                
+                navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+                
+                navBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: ContrastColorOf(navBarColor, returnFlat: true)]
+                
+                searchBar.barTintColor = navBarColor
+            }
+        }
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -32,6 +51,12 @@ class TodoListViewController: SwipeTableViewController{
         if let item = itemArray?[indexPath.row] {
             cell.textLabel?.text = item.name
             cell.accessoryType = item.isChecked ? .checkmark : .none
+            
+            if let colour = UIColor(hexString: selectedCategory!.cellBackgroundColor)?.darken(byPercentage: (CGFloat(indexPath.row) / CGFloat(itemArray!.count))) {
+                cell.backgroundColor = colour
+                cell.textLabel?.textColor = ContrastColorOf(colour, returnFlat: true)
+            }
+            
         } else {
             cell.textLabel?.text = "No Items Added"
         }
@@ -118,17 +143,17 @@ class TodoListViewController: SwipeTableViewController{
 //MARK: - Search bar methods
 
 extension TodoListViewController: UISearchBarDelegate {
-
+    
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         itemArray = itemArray?.filter("name CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: true)
         
         tableView.reloadData()
     }
-
+    
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchBar.text?.count == 0 {
             loadTodoItems()
-
+            
             DispatchQueue.main.async {
                 searchBar.resignFirstResponder()
             }

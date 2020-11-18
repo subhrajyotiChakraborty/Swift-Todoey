@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class CategoryTableViewController: SwipeTableViewController {
     
@@ -21,6 +22,11 @@ class CategoryTableViewController: SwipeTableViewController {
         loadCategories()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        guard let navBar = navigationController?.navigationBar else { return }
+        navBar.barTintColor = UIColor(hexString: "1D9BF6")
+    }
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return categoryArray?.count ?? 1
     }
@@ -29,11 +35,21 @@ class CategoryTableViewController: SwipeTableViewController {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         cell.textLabel?.text = categoryArray?[indexPath.row].categoryName ?? "No Categories Added Yet"
         
+        if let cellColorString = categoryArray?[indexPath.row].cellBackgroundColor {
+            cell.backgroundColor = UIColor(hexString: cellColorString)
+            
+            if let colour = UIColor(hexString: cellColorString) {
+                cell.textLabel?.textColor = ContrastColorOf(colour, returnFlat: true)
+            }
+        }
+        
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "goToTodoItem", sender: self)
+        
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
